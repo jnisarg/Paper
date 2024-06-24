@@ -1,3 +1,27 @@
+'''
+# Filename: ddrnet.py                                                          #
+# Project: backbones                                                           #
+# Created Date: Monday, June 24th 2024, 11:17:12 am                            #
+# Author: Nisarg Joshi                                                         #
+# -----                                                                        #
+# Last Modified: Mon Jun 24 2024                                               #
+# Modified By: Nisarg Joshi                                                    #
+# -----                                                                        #
+# Copyright (c) 2024 Nisarg Joshi @ HL Klemove India Pvt. Ltd.                 #
+'''
+
+'''
+# Filename: ddrnet.py                                                          #
+# Project: backbones                                                           #
+# Created Date: Monday, June 24th 2024, 11:17:12 am                            #
+# Author: Nisarg Joshi                                                         #
+# -----                                                                        #
+# Last Modified: Mon Jun 24 2024                                               #
+# Modified By: Nisarg Joshi                                                    #
+# -----                                                                        #
+# Copyright (c) 2024 Nisarg Joshi @ HL Klemove India Pvt. Ltd.                 #
+'''
+
 import torch
 from torch import nn
 
