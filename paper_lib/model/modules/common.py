@@ -10,6 +10,21 @@ Act = partial(nn.ReLU, inplace=True)
 Upsample = partial(F.interpolate, mode="bilinear", align_corners=False)
 
 
+def init_weights(module: nn.Module) -> None:
+    """Initialize model weights."""
+    for m in module.modules():
+        if isinstance(m, nn.Conv2d):
+            nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
+            if m.bias is not None:
+                nn.init.zeros_(m.bias)
+        elif isinstance(m, nn.BatchNorm2d):
+            nn.init.ones_(m.weight)
+            nn.init.zeros_(m.bias)
+        elif isinstance(m, nn.Linear):
+            nn.init.kaiming_uniform_(m.weight, mode="fan_out")
+            nn.init.zeros_(m.bias)
+
+
 class ConvBN(nn.Sequential):
     """
     Sequential module for convolution and batch normalization.
@@ -35,6 +50,8 @@ class ConvBN(nn.Sequential):
         bias: bool = False,
     ) -> None:
         """Initialize ConvBN module."""
+        super().__init__()
+
         if padding is None:
             padding = (kernel_size - 1) // 2
 
@@ -109,6 +126,8 @@ class BNReLUConv(nn.Sequential):
         bias: bool = False,
     ) -> None:
         """Initialize BNReLUConv module."""
+        super().__init__()
+
         if padding is None:
             padding = (kernel_size - 1) // 2
 
@@ -149,9 +168,11 @@ class BasicBlock(nn.Module):
             downsample (Optional[nn.Module], optional): Downsample layer. Defaults to None.
         """
         super().__init__()
+
         self.conv1 = ConvBNReLU(in_channels, out_channels, 3, stride)
-        self.conv2 = ConvBN(out_channels, out_channels, 3, 1)
+        self.conv2 = ConvBN(out_channels, out_channels * self.expansion_factor, 3, 1)
         self.downsample = downsample
+        self.act = Act()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward pass of the residual block.
@@ -171,7 +192,7 @@ class BasicBlock(nn.Module):
             residual = self.downsample(x)
 
         out += residual
-        out = F.relu(out)
+        out = self.act(out)
 
         return out
 
@@ -179,7 +200,7 @@ class BasicBlock(nn.Module):
 class Bottleneck(nn.Module):
     """Bottleneck residual block for ResNetV2."""
 
-    expansion_factor: int = 4
+    expansion_factor: int = 2
 
     def __init__(
         self,
@@ -201,8 +222,9 @@ class Bottleneck(nn.Module):
 
         self.conv1 = ConvBNReLU(in_channels, mid_channels, 1)
         self.conv2 = ConvBNReLU(mid_channels, mid_channels, 3, stride)
-        self.conv3 = ConvBN(mid_channels, out_channels, 1)
+        self.conv3 = ConvBN(mid_channels, out_channels * self.expansion_factor, 1)
         self.downsample = downsample
+        self.act = Act()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward pass of the residual block.
@@ -223,6 +245,6 @@ class Bottleneck(nn.Module):
             residual = self.downsample(x)
 
         out += residual
-        out = F.relu(out)
+        out = self.act(out)
 
         return out

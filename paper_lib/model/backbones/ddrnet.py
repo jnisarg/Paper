@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from paper_lib.model.modules import common as cm
+from modules import common as cm
 
 
 class DAPPM(nn.Module):
@@ -36,6 +36,7 @@ class DAPPM(nn.Module):
         self.scale3 = nn.Sequential(
             nn.AvgPool2d(kernel_size=3, stride=2, padding=1),
             nn.AvgPool2d(kernel_size=3, stride=2, padding=1),
+            nn.AvgPool2d(kernel_size=3, stride=2, padding=1),
             cm.BNReLUConv(in_channels, mid_channels, 1),
         )
         self.scale4 = nn.Sequential(
@@ -62,11 +63,11 @@ class DAPPM(nn.Module):
             torch.Tensor: Output tensor.
         """
         scale0 = self.scale0(x)
-        scale1 = cm.upsample(self.scale1(x), scale_factor=2) + scale0
-        scale2 = cm.upsample(self.scale2(x), scale_factor=4) + scale1
-        scale3 = cm.upsample(self.scale3(x), scale_factor=8) + scale2
+        scale1 = cm.Upsample(self.scale1(x), scale_factor=2) + scale0
+        scale2 = cm.Upsample(self.scale2(x), scale_factor=4) + scale1
+        scale3 = cm.Upsample(self.scale3(x), scale_factor=8) + scale2
         scale4 = (
-            cm.upsample(self.scale4(x), scale_factor=(int(x.size(2)), int(x.size(3))))
+            cm.Upsample(self.scale4(x), scale_factor=(int(x.size(2)), int(x.size(3))))
             + scale3
         )
 
@@ -115,6 +116,7 @@ class PAPPM(nn.Module):
         self.scale3 = nn.Sequential(
             nn.AvgPool2d(kernel_size=3, stride=2, padding=1),
             nn.AvgPool2d(kernel_size=3, stride=2, padding=1),
+            nn.AvgPool2d(kernel_size=3, stride=2, padding=1),
             cm.BNReLUConv(in_channels, mid_channels, 1),
         )
         self.scale4 = nn.Sequential(
@@ -138,11 +140,11 @@ class PAPPM(nn.Module):
             torch.Tensor: Output tensor.
         """
         scale0 = self.scale0(x)
-        scale1 = cm.upsample(self.scale1(x), scale_factor=2) + scale0
-        scale2 = cm.upsample(self.scale2(x), scale_factor=4) + scale0
-        scale3 = cm.upsample(self.scale3(x), scale_factor=8) + scale0
+        scale1 = cm.Upsample(self.scale1(x), scale_factor=2) + scale0
+        scale2 = cm.Upsample(self.scale2(x), scale_factor=4) + scale0
+        scale3 = cm.Upsample(self.scale3(x), scale_factor=8) + scale0
         scale4 = (
-            cm.upsample(self.scale4(x), scale_factor=(int(x.size(2)), int(x.size(3))))
+            cm.Upsample(self.scale4(x), scale_factor=(int(x.size(2)), int(x.size(3))))
             + scale0
         )
 
@@ -234,8 +236,8 @@ class DDRNet(nn.Module):
         self.ppm_planes = ppm_planes
 
         self.stem = nn.Sequential(
-            cm.BNReLUConv(3, planes, 3, stride=2, padding=1),
-            cm.BNReLUConv(planes, planes, 3, stride=2, padding=1),
+            cm.ConvBNReLU(3, planes, 3, stride=2, padding=1),
+            cm.ConvBNReLU(planes, planes, 3, stride=2, padding=1),
         )
 
         self.layer1 = self._make_layer(cm.BasicBlock, planes, planes, 2, 1)
@@ -244,7 +246,7 @@ class DDRNet(nn.Module):
         # Context Branch Layers
         self.context3 = self._make_layer(cm.BasicBlock, planes * 2, planes * 4, 2, 2)
         self.context4 = self._make_layer(cm.BasicBlock, planes * 4, planes * 8, 1, 2)
-        self.context5 = self._make_layer(cm.Bottleneck, planes * 8, planes * 8, 1, 1)
+        self.context5 = self._make_layer(cm.Bottleneck, planes * 8, planes * 8, 1, 2)
 
         self.compression3 = cm.ConvBNReLU(planes * 4, planes * 2, 1, 1)
         self.compression4 = cm.ConvBNReLU(planes * 8, planes * 2, 1, 1)
@@ -255,21 +257,14 @@ class DDRNet(nn.Module):
         self.detail5 = self._make_layer(cm.Bottleneck, planes * 2, planes * 2, 1, 1)
 
         self.down3 = cm.ConvBNReLU(planes * 2, planes * 4, 3, 2)
-        self.donw4 = nn.Sequential(
+        self.down4 = nn.Sequential(
             cm.ConvBNReLU(planes * 2, planes * 4, 3, 2),
             cm.ConvBNReLU(planes * 4, planes * 8, 3, 2),
         )
 
         self.ppm = ppm_hub.get(ppm_block, "ce")(planes * 16, ppm_planes, planes * 4)
 
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
-                if m.bias is not None:
-                    nn.init.zeros_(m.bias)
-            elif isinstance(m, nn.BatchNorm2d):
-                nn.init.ones_(m.weight)
-                nn.init.zeros_(m.bias)
+        self.out_channels = [planes * 4, planes * 4, [planes * 2, planes * 2]]
 
     def _make_layer(
         self,
@@ -330,7 +325,7 @@ class DDRNet(nn.Module):
 
         down3 = context3 + self.down3(detail3)
         compression3 = detail3 + cm.Upsample(
-            self.compression4(context3), scale_factor=2
+            self.compression3(context3), scale_factor=2
         )
 
         context4 = self.context4(down3)
