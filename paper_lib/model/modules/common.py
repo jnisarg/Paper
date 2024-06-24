@@ -1,6 +1,6 @@
 '''
 # Filename: common.py                                                          #
-# Project: modules                                                             #
+# Module: modules                                                              #
 # Created Date: Monday, June 24th 2024, 9:17:48 am                             #
 # Author: Nisarg Joshi                                                         #
 # -----                                                                        #
@@ -107,9 +107,7 @@ class ConvBNReLU(ConvBN):
         bias: bool = False,
     ) -> None:
         """Initialize ConvBNReLU module."""
-        super().__init__(
-            in_channels, out_channels, kernel_size, stride, padding, groups, bias
-        )
+        super().__init__(in_channels, out_channels, kernel_size, stride, padding, groups, bias)
         self.add_module("relu", Act())
 
 

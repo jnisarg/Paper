@@ -1,4 +1,4 @@
-'''
+"""
 # Filename: network.py                                                         #
 # Project: model                                                               #
 # Created Date: Monday, June 24th 2024, 9:16:56 am                             #
@@ -8,7 +8,7 @@
 # Modified By: Nisarg Joshi                                                    #
 # -----                                                                        #
 # Copyright (c) 2024 Nisarg Joshi @ HL Klemove India Pvt. Ltd.                 #
-'''
+"""
 
 import torch
 from torch import nn
@@ -92,9 +92,7 @@ if __name__ == "__main__":
 
     x = torch.randn(1, 3, 1024, 1024)
     out = model(x)
-    print(
-        f"Classification output shape: {out[0].shape}, Localization output shape: {out[1].shape}"
-    )
+    print(f"Classification output shape: {out[0].shape}, Localization output shape: {out[1].shape}")
 
     parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f"Number of parameters: {parameters / 1e6:.2f}M")  # 3.87M

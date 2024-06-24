@@ -10,18 +10,6 @@
 # Copyright (c) 2024 Nisarg Joshi @ HL Klemove India Pvt. Ltd.                 #
 '''
 
-'''
-# Filename: ddrnet.py                                                          #
-# Project: backbones                                                           #
-# Created Date: Monday, June 24th 2024, 11:17:12 am                            #
-# Author: Nisarg Joshi                                                         #
-# -----                                                                        #
-# Last Modified: Mon Jun 24 2024                                               #
-# Modified By: Nisarg Joshi                                                    #
-# -----                                                                        #
-# Copyright (c) 2024 Nisarg Joshi @ HL Klemove India Pvt. Ltd.                 #
-'''
-
 import torch
 from torch import nn
 
@@ -90,19 +78,14 @@ class DAPPM(nn.Module):
         scale1 = cm.Upsample(self.scale1(x), scale_factor=2) + scale0
         scale2 = cm.Upsample(self.scale2(x), scale_factor=4) + scale1
         scale3 = cm.Upsample(self.scale3(x), scale_factor=8) + scale2
-        scale4 = (
-            cm.Upsample(self.scale4(x), scale_factor=(int(x.size(2)), int(x.size(3))))
-            + scale3
-        )
+        scale4 = cm.Upsample(self.scale4(x), scale_factor=(int(x.size(2)), int(x.size(3)))) + scale3
 
         process1 = self.process1(scale1)
         process2 = self.process2(scale2)
         process3 = self.process3(scale3)
         process4 = self.process4(scale4)
 
-        cat_features = torch.cat(
-            [scale0, process1, process2, process3, process4], dim=1
-        )
+        cat_features = torch.cat([scale0, process1, process2, process3, process4], dim=1)
         out = self.compression(cat_features) + self.shortcut(x)
 
         return out
@@ -167,10 +150,7 @@ class PAPPM(nn.Module):
         scale1 = cm.Upsample(self.scale1(x), scale_factor=2) + scale0
         scale2 = cm.Upsample(self.scale2(x), scale_factor=4) + scale0
         scale3 = cm.Upsample(self.scale3(x), scale_factor=8) + scale0
-        scale4 = (
-            cm.Upsample(self.scale4(x), scale_factor=(int(x.size(2)), int(x.size(3))))
-            + scale0
-        )
+        scale4 = cm.Upsample(self.scale4(x), scale_factor=(int(x.size(2)), int(x.size(3)))) + scale0
 
         process = self.process(torch.cat([scale1, scale2, scale3, scale4], dim=1))
 
@@ -218,9 +198,7 @@ class CE(nn.Module):
         Returns:
             torch.Tensor: Output tensor.
         """
-        scale = cm.Upsample(
-            self.scale(x), scale_factor=(int(x.size(2)), int(x.size(3)))
-        )
+        scale = cm.Upsample(self.scale(x), scale_factor=(int(x.size(2)), int(x.size(3))))
 
         process = self.process(scale)
 
@@ -391,17 +369,13 @@ class DDRNet(nn.Module):
         detail3 = self.detail3(layer2)
 
         down3 = context3 + self.down3(detail3)
-        compression3 = detail3 + cm.Upsample(
-            self.compression3(context3), scale_factor=2
-        )
+        compression3 = detail3 + cm.Upsample(self.compression3(context3), scale_factor=2)
 
         context4 = self.context4(down3)
         detail4 = self.detail4(compression3)
 
         down4 = context4 + self.down4(detail4)
-        compression4 = detail4 + cm.Upsample(
-            self.compression4(context4), scale_factor=4
-        )
+        compression4 = detail4 + cm.Upsample(self.compression4(context4), scale_factor=4)
 
         context5 = self.context5(down4)
         detail5 = self.detail5(compression4)

@@ -1,4 +1,4 @@
-'''
+"""
 # Filename: cityscapes.py                                                      #
 # Project: data                                                                #
 # Created Date: Monday, June 24th 2024, 4:57:05 pm                             #
@@ -8,5 +8,4 @@
 # Modified By: Nisarg Joshi                                                    #
 # -----                                                                        #
 # Copyright (c) 2024 Nisarg Joshi @ HL Klemove India Pvt. Ltd.                 #
-'''
-
+"""
