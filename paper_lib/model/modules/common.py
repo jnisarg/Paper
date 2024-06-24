@@ -1,9 +1,9 @@
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-
 from typing import Optional
 from functools import partial
+
+import torch
+import torch.nn.functional as F
+from torch import nn
 
 Norm2d = partial(nn.BatchNorm2d, eps=1e-3, momentum=0.01)
 Act = partial(nn.ReLU, inplace=True)

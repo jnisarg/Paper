@@ -1,9 +1,9 @@
 import torch
-import torch.nn as nn
+from torch import nn
 
-from modules import common as cm
-from backbones.ddrnet import DDRNet
-from modules.head import ClassificationHead, RegressionHead
+from paper_lib.model.modules import common as cm
+from paper_lib.model.backbones.ddrnet import DDRNet
+from paper_lib.model.modules.head import ClassificationHead, RegressionHead
 
 
 class Network(nn.Module):
@@ -50,18 +50,19 @@ class Network(nn.Module):
         # Initialize weights
         cm.init_weights(self)
 
-    def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+    def forward(self, input_tensor: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Forward pass.
 
         Args:
-            x (torch.Tensor): Input tensor.
+            input_tensor (torch.Tensor): Input tensor.
 
         Returns:
-            tuple[torch.Tensor, torch.Tensor]: Tuple of output pixel-level classification and object localization tensors.
+            tuple[torch.Tensor, torch.Tensor]: Tuple of output pixel-level classification
+            and object localization tensors.
         """
         # Pass input through backbone network
-        ppm, detail5, (compression3, compression4) = self.backbone(x)
+        ppm, detail5, _ = self.backbone(input_tensor)
 
         # Pass output through classification and localization heads
         return self.classifier(ppm + detail5), self.regressor(ppm + detail5)
@@ -79,7 +80,9 @@ if __name__ == "__main__":
 
     x = torch.randn(1, 3, 1024, 1024)
     out = model(x)
-    print(out[0].shape, out[1].shape)
+    print(
+        f"Classification output shape: {out[0].shape}, Localization output shape: {out[1].shape}"
+    )
 
     parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f"Number of parameters: {parameters / 1e6:.2f}M")  # 3.87M

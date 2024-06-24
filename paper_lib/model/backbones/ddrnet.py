@@ -1,7 +1,7 @@
 import torch
-import torch.nn as nn
+from torch import nn
 
-from modules import common as cm
+from paper_lib.model.modules import common as cm
 
 
 class DAPPM(nn.Module):
@@ -220,6 +220,49 @@ class DDRNet(nn.Module):
         ppm_block (str, optional): The PPM block to use. Defaults to "DAPPM".
         planes (int, optional): The number of planes. Defaults to 32.
         ppm_planes (int, optional): The number of PPM planes. Defaults to 128.
+
+    Attributes:
+        ppm_block (str): The PPM block to use.
+        planes (int): The number of planes.
+        ppm_planes (int): The number of PPM planes.
+        stem (nn.Sequential): The stem of the model.
+        layer1 (nn.Sequential): The first layer of residual blocks.
+        layer2 (nn.Sequential): The second layer of residual blocks.
+        context3 (nn.Sequential): The third layer of context blocks.
+        detail3 (nn.Sequential): The third layer of detail blocks.
+        down3 (nn.Module): The downsampling module for context3.
+        compression3 (nn.Module): The compression module for detail3.
+        context4 (nn.Sequential): The fourth layer of context blocks.
+        detail4 (nn.Sequential): The fourth layer of detail blocks.
+        down4 (nn.Module): The downsampling module for context4.
+        compression4 (nn.Module): The compression module for detail4.
+        context5 (nn.Sequential): The fifth layer of context blocks.
+        detail5 (nn.Sequential): The fifth layer of detail blocks.
+        ppm (nn.Module): The PPM module.
+
+    Methods:
+        forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, tuple[torch.Tensor, torch.Tensor]]:
+            Forward pass of the model.
+
+            Args:
+                x (torch.Tensor): The input tensor.
+
+            Returns:
+                tuple[torch.Tensor, torch.Tensor, tuple[torch.Tensor, torch.Tensor]]: The output tensor, followed by
+                intermediate tensors.
+
+        _make_layer(self, block: nn.Module, in_channels: int, out_channels: int, num_blocks: int, stride: int) -> nn.Sequential:
+            Create a layer of residual blocks.
+
+            Args:
+                block (nn.Module): The block to use.
+                in_channels (int): The number of input channels.
+                out_channels (int): The number of output channels.
+                num_blocks (int): The number of blocks.
+                stride (int): The stride.
+
+            Returns:
+                nn.Sequential: The layer of residual blocks.
     """
 
     def __init__(
