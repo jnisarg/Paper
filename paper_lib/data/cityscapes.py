@@ -11,7 +11,7 @@
 """
 
 import os
-from typing import Tuple, List, Dict, Any, Optional
+from typing import Tuple, List, Dict, Any, Optional, Union
 
 import numpy as np
 import cv2
@@ -138,9 +138,7 @@ class CityscapesDataset(Dataset):
         """
         return len(self.samples)
 
-    def __getitem__(
-        self, index: int
-    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, Dict[str, Any]]:
+    def __getitem__(self, index: int) -> Dict[str, Union[torch.Tensor, Dict[str, Any]]]:
         """
         Get a sample from the dataset.
 
@@ -148,11 +146,11 @@ class CityscapesDataset(Dataset):
             index (int): Index of the sample to retrieve.
 
         Returns:
-            Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, Dict[str, Any]]:
-                Image tensor, bounding boxes tensor, labels tensor, mask tensor, and info dictionary.
+            Dict[str, Union[torch.Tensor, Dict[str, Any]]]:
+                A dictionary containing the image, bounding boxes, labels, mask, and sample information.
         """
         sample = self.samples[index]
-        image_path, bbox_path, mask_path = sample.split()
+        image_path, mask_path, bbox_path = sample.split()
 
         infos = {"name": os.path.basename(image_path)}
 
@@ -170,7 +168,13 @@ class CityscapesDataset(Dataset):
         mask = torch.tensor(mask, dtype=torch.long)
         labels = torch.tensor(labels, dtype=torch.long)
 
-        return image, bboxes, labels, mask, infos
+        return {
+            "image": image,
+            "bboxes": bboxes,
+            "labels": labels,
+            "mask": mask,
+            "info": infos,
+        }
 
     def _load_image(self, image_path: str) -> np.ndarray:
         """
@@ -207,7 +211,7 @@ class CityscapesDataset(Dataset):
         Returns:
             Tuple[List[List[int]], List[int]]: List of bounding boxes and list of labels.
         """
-        with open(bbox_path, "r", encoding="utf-8") as fr:
+        with open(os.path.join(self.root, bbox_path), "r", encoding="utf-8") as fr:
             lines = fr.read().splitlines()
 
         bboxes, labels = [], []
@@ -239,12 +243,12 @@ class CityscapesDataset(Dataset):
                 Transformed image, bounding boxes, labels, and mask.
         """
         transform = self._get_transform()
-        transformed = transform(image=image, bboxes=bboxes, labels=labels, masks=mask)
+        transformed = transform(image=image, bboxes=bboxes, labels=labels, mask=mask)
 
         image = transformed["image"]
         bboxes = transformed["bboxes"]
         labels = transformed["labels"]
-        mask = transformed["masks"]
+        mask = transformed["mask"]
 
         mask = self._map_mask(mask)
 
@@ -260,7 +264,7 @@ class CityscapesDataset(Dataset):
         if self.mode == "train":
             return A.Compose(
                 [
-                    A.RandomSizedBBoxSafeCrop(
+                    A.RandomResizedCrop(
                         height=self.train_size[0], width=self.train_size[1]
                     ),
                     A.HorizontalFlip(p=0.5),
@@ -274,7 +278,10 @@ class CityscapesDataset(Dataset):
                     ),
                 ],
                 bbox_params=A.BboxParams(
-                    format=self.bbox_format, min_visibility=0.7, label_fields=["labels"]
+                    format=self.bbox_format,
+                    min_visibility=0.7,
+                    min_area=2000,
+                    label_fields=["labels"],
                 ),
             )
 
@@ -283,7 +290,10 @@ class CityscapesDataset(Dataset):
                 A.Resize(height=self.val_size[0], width=self.val_size[1]),
             ],
             bbox_params=A.BboxParams(
-                format=self.bbox_format, min_visibility=0.0, label_fields=["labels"]
+                format=self.bbox_format,
+                min_visibility=0.7,
+                min_area=2000,
+                label_fields=["labels"],
             ),
         )
 
