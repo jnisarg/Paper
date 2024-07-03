@@ -39,7 +39,7 @@ class Criterion(nn.Module):
     def forward(
         self,
         classification: torch.Tensor,
-        regression: torch.Tensor,
+        localization: torch.Tensor,
         targets: torch.Tensor,
     ) -> torch.Tensor:
         pixel_cls_loss = self._ohem_loss(classification, targets["mask"])
